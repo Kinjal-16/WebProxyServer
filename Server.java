@@ -119,7 +119,15 @@ public class Server
                     url = url.substring(0, url.indexOf(' '));
 
 
-
+                    for(String i:BlockedSites)
+                    {
+                        if(url.contains(i))
+                        {
+                            System.out.println("Site blocked");
+                            blockURL();
+                            return;
+                        }
+                    }
 
 
                     if(request.equals("CONNECT"))
@@ -193,14 +201,12 @@ public class Server
         
         
         
-                    // Create a new thread to listen to client and transmit to server
-                    ClientToServerTunnel clientToServerHttps = 
+                    ClientToServerTunnel clientToServerHttps =
                             new ClientToServerTunnel(clientSocket.getInputStream(), RemoteServerSocket.getOutputStream());
                     
                     clientToServerHttps.start();
                     
                     
-                    // Listen to remote server and relay to client
                     try {
                         byte[] buffer = new byte[4096];
                         int read;
@@ -415,7 +421,23 @@ public class Server
 
                 }
             }
+            public void blockURL()
+            {
+                try {
+                    BufferedWriter bW = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+                    String line = "HTTP/1.0 403 Access Forbidden \n" +
+                            "User-Agent: ProxyServer/1.0\n" +
+                            "\r\n";
+                    bW.write(line);
+                    bW.flush();
+                } catch (IOException e) {
+                    System.out.println("Could report a blocked site to the client");
+                    e.printStackTrace();
+                }
+            }
+
         }
+
     
         public static void main(String[] args) {
 
