@@ -61,7 +61,8 @@ public class Server
 
                 t.println("3. Unblock a Website");
 
-                int a = Integer.parseInt(t.read("Enter a number"));
+                int a = Integer.parseInt
+                        (t.read("Enter a number"));
                 if (a == 1) {
                     if (BlockedSites.isEmpty()) {
                         t.println("EmptyList");
@@ -108,9 +109,10 @@ public class Server
     
             public void run() {
                 try {
-                    out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-                    in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    System.out.println(cached.isEmpty());
+                    out = new BufferedWriter(
+                            new OutputStreamWriter(clientSocket.getOutputStream()));
+                    in = new BufferedReader(
+                            new InputStreamReader(clientSocket.getInputStream()));
                     String inputLine = in.readLine();
                     System.out.println(inputLine);
                     String request = inputLine.substring(0,inputLine.indexOf(' '));
@@ -129,7 +131,9 @@ public class Server
                         }
                     }
 
-
+                    /* If request type is CONNECT, then its a
+                    HTTPS request and has to handled differently
+                    from other HTTP request*/
                     if(request.equals("CONNECT"))
                     {
                         String pieces[] = url.split(":");
@@ -147,18 +151,14 @@ public class Server
                             String add = "http://";
                             url = add + url;                     
                         }
-
-
-
+                        // The program checks if the requested object is stored locally
                         if(cached.containsKey(url)) {
                             System.out.println("Cached Website");
                             CachedRequest(url);
-
                         }
                         else
                             nonCachedRequest(url);
                     }
-                    System.out.println(inputLine);
                     in.close();
                     out.close();
                     clientSocket.close();
@@ -178,7 +178,7 @@ public class Server
                     for(int i=0;i<5;i++){
                         in.readLine();
                     }
-        
+                    // Get the Server's IP address
                     InetAddress add = InetAddress.getByName(url);
                     
                     Socket RemoteServerSocket = new Socket(add, port);
@@ -189,32 +189,36 @@ public class Server
                             "\r\n";
                     out.write(line);
                     out.flush();
-                    
-                    
-                    
-                   
-        
-        
-                    BufferedWriter ServerOut = new BufferedWriter(new OutputStreamWriter(RemoteServerSocket.getOutputStream()));
-        
-                    BufferedReader ServerIn = new BufferedReader(new InputStreamReader(RemoteServerSocket.getInputStream()));
-        
-        
+                    // Establish a connection between the proxy and the remote server
+                    BufferedWriter ServerOut = new BufferedWriter
+                            (new OutputStreamWriter
+                                    (RemoteServerSocket.getOutputStream()));
+                    BufferedReader ServerIn = new BufferedReader
+                            (new InputStreamReader
+                                    (RemoteServerSocket.getInputStream()));
         
                     ClientToServerTunnel clientToServerHttps =
-                            new ClientToServerTunnel(clientSocket.getInputStream(), RemoteServerSocket.getOutputStream());
-                    
+                            new ClientToServerTunnel
+                                    (clientSocket.getInputStream(),
+                                            RemoteServerSocket.getOutputStream());
                     clientToServerHttps.start();
-                    
-                    
+
                     try {
                         byte[] buffer = new byte[4096];
                         int read;
                         do {
+                            /* The proxy Server getting the files sent by the
+                                remote server*/
+
                             read = RemoteServerSocket.getInputStream().read(buffer);
                             if (read > 0) {
-                                clientSocket.getOutputStream().write(buffer, 0, read);
-                                if (RemoteServerSocket.getInputStream().available() < 1) {
+                                /* The proxy Server forwarding the files it got
+                                * from the remote server to the client*/
+                                clientSocket.getOutputStream()
+                                        .write(buffer, 0, read);
+                                if (RemoteServerSocket.getInputStream()
+                                        .available() < 1)
+                                {
                                     clientSocket.getOutputStream().flush();
                                 }
                             }
@@ -226,12 +230,9 @@ public class Server
                     catch (IOException e) {
                         e.printStackTrace();
                     }
-        
-        
                     if(RemoteServerSocket != null){
                         RemoteServerSocket.close();
                     }
-        
                     if(ServerIn != null){
                         ServerIn.close();
                     }
@@ -239,11 +240,9 @@ public class Server
                     if(ServerOut != null){
                         ServerOut.close();
                     }
-        
                     if(out != null){
                         out.close();
                     }
-                    
                     
                 } catch (SocketTimeoutException e) {
                     String line = "HTTP/1.0 504 Timeout Occured after 10s\n" +
@@ -265,17 +264,25 @@ public class Server
                 String fileExtension = url.substring(url.lastIndexOf("."));
                 String fileName;
                 if (url.indexOf(".") != url.lastIndexOf("."))
-                    fileName = url.substring(url.indexOf(".") + 1, url.lastIndexOf("."));
+                    fileName = url.substring(url.indexOf(".") + 1,
+                            url.lastIndexOf("."));
                 else
-                    fileName = url.substring(7, url.indexOf("."));
+                    fileName = url.substring(7,
+                            url.indexOf("."));
 
 
                 fileName = fileName.replace("/", "__");
                 fileName = fileName.replace('.', '_');
+                // Retrieving the file from the disc using the hashmap
                 File cachFile = cached.get(url);
-                if (fileExtension.contains("PNG") || fileExtension.contains("JPG") || fileExtension.contains("JPEG") || fileExtension.contains("GIF")) {
+                // checking if the file is an image or a text file
+                if (fileExtension.contains("PNG")
+                        || fileExtension.contains("JPG")
+                        || fileExtension.contains("JPEG")
+                        || fileExtension.contains("GIF"))
+                {
                     BufferedImage image = ImageIO.read(cachFile);
-                    if (image == null) {
+                    if (image == null) { // Check if the file is not null
                         System.out.println(fileName + ":Image is empty");
                         String response = "HTTP/1.0 404 NOT FOUND \n" +
                                 "Proxy-agent: ProxyServer/1.0\n" +
@@ -286,12 +293,17 @@ public class Server
                         String response = "HTTP/1.0 200 OK\n" +
                                 "Proxy-agent: ProxyServer/1.0\n" +
                                 "\r\n";
-                        out.write(response);
+                        out.write(response);// Send the file
                         out.flush();
-                        ImageIO.write(image, fileExtension.substring(1), clientSocket.getOutputStream());
+                        ImageIO.write(image,
+                                fileExtension.substring(1),
+                                clientSocket.getOutputStream());
                     }
-                } else {
-                    BufferedReader cachedOut = new BufferedReader(new InputStreamReader(new FileInputStream(cachFile)));
+                }
+                else {
+                    BufferedReader cachedOut = new BufferedReader
+                            (new InputStreamReader
+                                    (new FileInputStream(cachFile)));
                     String response = "HTTP/1.0 200 OK\n" +
                             "Proxy-agent: ProxyServer/1.0\n" +
                             "\r\n";
@@ -300,7 +312,7 @@ public class Server
 
                     String line;
                     while ((line = cachedOut.readLine()) != null) {
-                        out.write(line);
+                        out.write(line);// Send the file
                     }
                     out.flush();
 
@@ -315,7 +327,8 @@ public class Server
                 String fileExtension = url.substring(url.lastIndexOf("."));
                 String fileName;
                 if(url.indexOf(".")!=url.lastIndexOf("."))
-                    fileName = url.substring(url.indexOf(".")+1,url.lastIndexOf("."));
+                    fileName = url.substring(url.indexOf(".")+1,
+                            url.lastIndexOf("."));
                 else
                     fileName = url.substring(7,url.indexOf("."));
 
@@ -339,20 +352,21 @@ public class Server
                 {
                     caching = false;
                     System.out.println("Failed to create cached file for:"+fileName);
-                    e.printStackTrace();
+
                 }
                 catch (NullPointerException e) {
                     System.out.println("Null Pointer Exception for:"+fileName);
-                    e.printStackTrace();
-                }
 
+                }
 
 
 
 
                 // When file is an image
-
-                if(fileExtension.contains("PNG") || fileExtension.contains("JPG") || fileExtension.contains("JPEG")|| fileExtension.contains("GIF"))
+                if(fileExtension.contains("PNG")
+                        || fileExtension.contains("JPG")
+                        || fileExtension.contains("JPEG")
+                        || fileExtension.contains("GIF"))
                 {
                     URL remoteUrl = new URL(url);
                     BufferedImage img = ImageIO.read(remoteUrl);
@@ -366,8 +380,8 @@ public class Server
                                 "\r\n";
                         out.write(response);
                         out.flush();
-
-                        ImageIO.write(img, fileExtension.substring(1), clientSocket.getOutputStream());
+                        ImageIO.write(img, fileExtension.substring(1)
+                                , clientSocket.getOutputStream());
                     }
                     else {
                         System.out.println(fileName+":404 File Not Found");
@@ -383,15 +397,16 @@ public class Server
                 // When File is a text file
                 else {
                     URL remoteUrl = new URL(url);
-                    HttpURLConnection Conn = (HttpURLConnection)remoteUrl.openConnection();
+                    HttpURLConnection Conn =
+                            (HttpURLConnection)remoteUrl.openConnection();
                     Conn.setRequestProperty("Content-Type",
                             "application/x-www-form-urlencoded");
                     Conn.setRequestProperty("Content-Language", "en-US");
                     Conn.setUseCaches(false);
                     Conn.setDoOutput(true);
-
-                    // Create Buffered Reader from remote Server
-                    BufferedReader ProxyIn = new BufferedReader(new InputStreamReader(Conn.getInputStream()));
+                    // Create Buffered Reader from remote Server to the client
+                    BufferedReader ProxyIn = new BufferedReader(
+                            new InputStreamReader(Conn.getInputStream()));
                     String response = "HTTP/1.0 200 OK\n" +
                             "Proxy-agent: ProxyServer/1.0\n" +
                             "\r\n";
@@ -404,10 +419,12 @@ public class Server
                             cacheWriter.write(read);
                     }
                     out.flush();
+
                     if (caching) {
                         cacheWriter.flush();
                         cached.put(url, cache);
                     }
+                    //Closing resources
                     if(cacheWriter != null)
                     {
                         cacheWriter.close();
@@ -416,7 +433,6 @@ public class Server
                     {
                         ProxyIn.close();
                     }
-                    System.out.println(cached);
 
 
                 }
@@ -424,7 +440,9 @@ public class Server
             public void blockURL()
             {
                 try {
-                    BufferedWriter bW = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+                    BufferedWriter bW = new BufferedWriter
+                            (new OutputStreamWriter
+                                    (clientSocket.getOutputStream()));
                     String line = "HTTP/1.0 403 Access Forbidden \n" +
                             "User-Agent: ProxyServer/1.0\n" +
                             "\r\n";
@@ -460,7 +478,8 @@ class ClientToServerTunnel extends Thread{
     OutputStream proxyOut;
     
   
-    public ClientToServerTunnel(InputStream ClientIn, OutputStream proxyOut) {
+    public ClientToServerTunnel(InputStream ClientIn
+            , OutputStream proxyOut) {
         this.ClientIn = ClientIn;
         this.proxyOut = proxyOut;
     }
@@ -481,10 +500,12 @@ class ClientToServerTunnel extends Thread{
             } while (read >= 0);
         }
         catch (SocketTimeoutException ste) {
-            System.out.println("Client to Remote Server Socket Timed out");
+            System.out.println("Client to Remote " +
+                    "Server Socket Timed out");
         }
         catch (IOException e) {
-            System.out.println("Proxy to client HTTPS read timed out");
+            System.out.println("Proxy to client " +
+                    "HTTPS read timed out");
 
         }
     }
